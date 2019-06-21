@@ -6,11 +6,11 @@ directory_string = 'source'
 directory = os.fsencode(directory_string)
 
 start = 0
-stop = 1
-videoX = 25
-videoY = 14
-xDimension = 640
-yDimension = 360
+stop = 10
+videoX = 10
+videoY = 10
+xDimension = 160
+yDimension = 90
 # Data holder
 videos = []
 x = 0
@@ -26,7 +26,7 @@ for file in os.listdir(directory):
      filename = os.fsdecode(file)
      if filename.endswith(".mp4"): 
          print("%s/%s (%i,%i)" % (directory_string, filename, x, y))
-         video = VideoFileClip(directory_string + "/" + filename).subclip(start, stop).set_position((x * xDimension, y * yDimension))
+         video = VideoFileClip(directory_string + "/" + filename).resize(width=160).subclip(start, stop).set_position((x * xDimension, y * yDimension))
          videos.append(video)
          if x < videoX:
          	x = x + 1
