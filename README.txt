@@ -10,3 +10,6 @@ Functionallity:
 
 Download files from youtuber
 Stich files to mosaic
+
+
+	export PYTHONUNBUFFERED=TRUE
