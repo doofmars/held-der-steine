@@ -1,9 +1,10 @@
 from moviepy.editor import *
 import os
 
-directory_string = 'source'
+youtube_url = 'https://www.youtube.com/user/HeldderSteine'
 
-directory = os.fsencode(directory_string)
+source_dir = 'source'
+loaded_flag = 'loaded'
 
 start = 0
 stop = 10
@@ -16,17 +17,17 @@ videos = []
 x = 0
 y = 0
 
-if not os.path.exists("source/loaded"):
-    open('source/loaded', 'a').close()
-    os.system('youtube-dl -o "source/%(upload_date)s_%(id)s.%(ext)s" -f worst https://www.youtube.com/user/HeldderSteine')
+if not os.path.exists(source_dir + '/' + loaded_flag):
+    open(source_dir + '/' + loaded_flag, 'a').close()
+    os.system('youtube-dl -o "'+source_dir+'/%(upload_date)s_%(id)s.%(ext)s" -f worst ' + youtube_url)
 else:
 	print('source files already downloaded')
 
-for file in os.listdir(directory):
+for file in os.listdir(source_dir):
      filename = os.fsdecode(file)
      if filename.endswith(".mp4"): 
-         print("%s/%s (%i,%i)" % (directory_string, filename, x, y))
-         video = VideoFileClip(directory_string + "/" + filename).resize(width=160).subclip(start, stop).set_position((x * xDimension, y * yDimension))
+         print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
+         video = VideoFileClip(source_dir + "/" + filename).resize(width=160).subclip(start, stop).set_position((x * xDimension, y * yDimension))
          videos.append(video)
          if x < videoX:
          	x = x + 1
