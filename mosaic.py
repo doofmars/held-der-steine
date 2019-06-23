@@ -17,8 +17,8 @@ x = 0
 y = 0
 
 if not os.path.exists("source/loaded"):
-    os.system('youtube-dl -o "source/%(upload_date)s_%(id)s.%(ext)s" -f worst https://www.youtube.com/user/HeldderSteine')
     open('source/loaded', 'a').close()
+    os.system('youtube-dl -o "source/%(upload_date)s_%(id)s.%(ext)s" -f worst https://www.youtube.com/user/HeldderSteine')
 else:
 	print('source files already downloaded')
 
