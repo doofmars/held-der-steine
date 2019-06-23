@@ -25,13 +25,13 @@ if not os.path.exists(source_dir + '/' + loaded_flag):
 else:
 	print('source files already downloaded')
 
-for file in os.listdir(source_dir):
+for file in sorted(os.listdir(source_dir), reverse=True):
      filename = os.fsdecode(file)
      if filename.endswith(".mp4"): 
          print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
          video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop).set_position((x * xDimension, y * yDimension))
          videos.append(video)
-         if x < videoX:
+         if x < videoX - 1:
          	x = x + 1
          else: 
          	x = 0
@@ -45,7 +45,7 @@ for file in os.listdir(source_dir):
 #final_clip = clips_array([[video0, video1, video2, video3], [video4, video5, video6, video7]])
 #final_clip.resize(width=1920).write_videofile("my_stack.mp4")
 
-CompositeVideoClip(videos, size=(xDimension*(videoX + 1),yDimension*(videoY + 1))).resize(width=1920).write_videofile(output)
+CompositeVideoClip(videos, size=(xDimension*(videoX),yDimension*(videoY))).resize(width=1920).write_videofile(output)
 
 # Finally open rendered video
 if platform.system() == 'Darwin':       # macOS
