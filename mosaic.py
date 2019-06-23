@@ -33,21 +33,21 @@ else:
 
 #Iterate over files, position and put into holding array
 for file in sorted(os.listdir(source_dir), reverse=True):
-     filename = os.fsdecode(file)
-     if filename.endswith(".mp4"): 
-         print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
-         video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop).set_position((x * xDimension, y * yDimension))
-         videos.append(video)
-         if x < videoX - 1:
-         	x = x + 1
-         else: 
-         	x = 0
-         	y = y + 1
-         	if y >= videoY:
-         		print("reached end of area")
-         		break
-     else:
-         continue
+    filename = os.fsdecode(file)
+    if filename.endswith(".mp4"): 
+        print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
+        video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop).set_position((x * xDimension, y * yDimension))
+        videos.append(video)
+        if x < videoX - 1:
+            x = x + 1
+        else: 
+            x = 0
+            y = y + 1
+            if y >= videoY:
+                print("reached end of area")
+                break
+    else:
+        continue
 
 #final_clip = clips_array([[video0, video1, video2, video3], [video4, video5, video6, video7]])
 #final_clip.resize(width=1920).write_videofile("my_stack.mp4")
