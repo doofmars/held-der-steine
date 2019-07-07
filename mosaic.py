@@ -43,6 +43,20 @@ def volume_mark(clip):
             print("%f -> %f"%(current, i))
             return i
 
+def prepare_file(filename):
+    input_video = VideoFileClip(source_dir + '/' + filename).resize(width=xDimension).subclip(start, stop)
+    concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename)
+    try:
+        input_video.audio.reader.close_proc()
+        input_video.reader.close()
+    except Exception as e:
+        pass
+    
+    try:
+        input_video.close()
+    except Exception as e:
+        print('Failed to close video, %s/%s'% (work_dir, filename))
+
 #Start downloading using youtube-dl
 if not os.path.exists(source_dir + '/' + loaded_flag):
     open(source_dir + '/' + loaded_flag, 'a').close()
@@ -71,18 +85,7 @@ for file in sorted(os.listdir(source_dir), reverse=True):
             print('%s/%s already exists, #%d'% (work_dir, filename, count))
         else:
             print('Perpare file: %s/%s, #%d'% (source_dir, filename, count))
-            input_video = VideoFileClip(source_dir + '/' + filename).resize(width=xDimension).subclip(start, stop)
-            concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename)
-            try:
-                input_video.audio.reader.close_proc()
-                input_video.reader.close()
-            except Exception as e:
-                pass
-            
-            try:
-                input_video.close()
-            except Exception as e:
-                print('Failed to close video, %s/%s'% (work_dir, filename))
+            prepare_file(filename)
         
         if count > (videoX * videoY):
             print('Preparation done')
