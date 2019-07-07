@@ -11,6 +11,7 @@ youtube_url = 'https://www.youtube.com/user/HeldderSteine'
 #File pahts, flags and output
 source_dir = 'source'
 work_dir = 'work'
+row_dir = 'row'
 loaded_flag = 'loaded'
 output = 'my_stack.mp4'
 black_image = 'black.png'
@@ -74,6 +75,10 @@ try:
     os.mkdir(work_dir)
 except FileExistsError:
     print('Wokrdir already exists')
+try:
+    os.mkdir(work_dir + '/' + row_dir)
+except FileExistsError:
+    print('Rowdir already exists')
 
 #Create blank video as buffer before videos
 img = Image.new('RGB', (xDimension, yDimension))
@@ -87,9 +92,9 @@ for file in sorted(os.listdir(source_dir), reverse=True):
         count = count + 1
         
         if os.path.exists(work_dir + '/' + filename):
-            print('%s/%s already exists, #%d'% (work_dir, filename, count))
+            print('%s/%s already exists, (%d)'% (work_dir, filename, count))
         else:
-            print('Perpare file: %s/%s, #%d'% (source_dir, filename, count))
+            print('Perpare file: %s/%s, (%d)'% (source_dir, filename, count))
             work.append(filename)
         
         if count > (videoX * videoY):
@@ -110,21 +115,38 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=mp.cpu_count()) as execut
     
 # pool.apply(prepare_file, args=(filename))
         
-#Iterate over workdir files, position clips and put into holding array
+#Iterate over workdir files, position clips and generate videos per row to preserve memory
 for file in sorted(os.listdir(work_dir), reverse=True):
     filename = os.fsdecode(file)
     if filename.endswith('.mp4'):
-        print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
-        videos.append(VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, y * yDimension)))
+        row_output = '%s/%s/r_%02d.mp4'% (work_dir, row_dir, y)
+        if not os.path.exists(row_output):
+            print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
+            videos.append(VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, 0)))
         
         if x < videoX - 1:
             x = x + 1
         else: 
+            if os.path.exists(row_output):
+                print('Row already exists, %s'% (row_output))
+            else:
+                print('Render row: %s'% (row_output))
+                CompositeVideoClip(videos, size=(xDimension*(videoX),yDimension)).write_videofile(row_output)
             x = 0
             y = y + 1
+            videos = []
             if y >= videoY:
                 print("Reached end of area")
                 break
+y = 0
+videos = []
+
+for file in sorted(os.listdir(work_dir + '/' + row_dir)):
+    filename = os.fsdecode(file)
+    if filename.endswith('.mp4'):
+        print('Load file: %s/%s/%s (%i)' % (work_dir, row_dir, filename, y * yDimension))
+        videos.append(VideoFileClip(work_dir + '/' + row_dir + '/' + filename).set_position((0, y * yDimension)))
+        y = y + 1
     
 #final_clip = clips_array([[video0, video1, video2, video3], [video4, video5, video6, video7]])
 #final_clip.resize(width=1920).write_videofile("my_stack.mp4")
