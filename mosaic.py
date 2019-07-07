@@ -1,6 +1,8 @@
 from moviepy.editor import *
-import numpy as np # for numerical operations
 from PIL import Image
+import multiprocessing as mp
+import concurrent.futures
+import numpy as np # for numerical operations
 import subprocess, os, platform
 
 #Youtuber target url
@@ -28,6 +30,7 @@ xDimension = 160
 yDimension = 90
 # Data holder
 videos = []
+work = []
 count = 0
 x = 0
 y = 0
@@ -40,12 +43,12 @@ def volume_mark(clip):
     for i in np.arange(0,int(clip.audio.duration), 1/frames_per_second): 
         current = volume(cut(i, clip))
         if current >= audiopeak:
-            print("%f -> %f"%(current, i))
+            print("Sync peak at %f -> %f for %s"%(i, current, filename))
             return i
 
 def prepare_file(filename):
     input_video = VideoFileClip(source_dir + '/' + filename).resize(width=xDimension).subclip(start, stop)
-    concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename)
+    concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename, verbose=False)
     try:
         input_video.audio.reader.close_proc()
         input_video.reader.close()
@@ -56,6 +59,8 @@ def prepare_file(filename):
         input_video.close()
     except Exception as e:
         print('Failed to close video, %s/%s'% (work_dir, filename))
+        
+    return filename
 
 #Start downloading using youtube-dl
 if not os.path.exists(source_dir + '/' + loaded_flag):
@@ -85,20 +90,32 @@ for file in sorted(os.listdir(source_dir), reverse=True):
             print('%s/%s already exists, #%d'% (work_dir, filename, count))
         else:
             print('Perpare file: %s/%s, #%d'% (source_dir, filename, count))
-            prepare_file(filename)
+            work.append(filename)
         
         if count > (videoX * videoY):
             print('Preparation done')
             break
-        
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=mp.cpu_count()) as executor:
+    future_prepare_file = {executor.submit(prepare_file, filename): filename for filename in work}
+    for future in concurrent.futures.as_completed(future_prepare_file):
+        future_processed_filename = future_prepare_file[future]
+        try:
+            data = future.result()
+        except Exception as exc:
+            print('%s generated an exception: %s' % (future_processed_filename, exc))
+        else:
+            print('Processed %s' % (data))
+    
+    
+# pool.apply(prepare_file, args=(filename))
         
 #Iterate over workdir files, position clips and put into holding array
 for file in sorted(os.listdir(work_dir), reverse=True):
     filename = os.fsdecode(file)
     if filename.endswith('.mp4'):
         print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
-        work_video = VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, y * yDimension))
-        videos.append(work_video)
+        videos.append(VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, y * yDimension)))
         
         if x < videoX - 1:
             x = x + 1
