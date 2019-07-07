@@ -18,11 +18,11 @@ black_image = 'black.png'
 
 #Length of all clips
 start = 0
-stop = 10
+stop = 20
 #Video sync related
-audiopeak = 0.015
+audiopeak = 0.02
 frames_per_second = 25
-buffer_duration = 2
+buffer_duration = 3
 #Number of videos in mosaic
 videoX = 19
 videoY = 19
@@ -113,8 +113,6 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=mp.cpu_count()) as execut
             print('Processed %s' % (data))
     
     
-# pool.apply(prepare_file, args=(filename))
-        
 #Iterate over workdir files, position clips and generate videos per row to preserve memory
 for file in sorted(os.listdir(work_dir), reverse=True):
     filename = os.fsdecode(file)
@@ -138,13 +136,19 @@ for file in sorted(os.listdir(work_dir), reverse=True):
             if y >= videoY:
                 print("Reached end of area")
                 break
+
+if len(videos) > 0:
+    CompositeVideoClip(videos, size=(xDimension*(videoX),yDimension)).write_videofile(row_output)
+
+print('Rows generated')
+
 y = 0
 videos = []
 
 for file in sorted(os.listdir(work_dir + '/' + row_dir)):
     filename = os.fsdecode(file)
     if filename.endswith('.mp4'):
-        print('Load file: %s/%s/%s (%i)' % (work_dir, row_dir, filename, y * yDimension))
+        print('Load file: %s/%s/%s (%i)' % (work_dir, row_dir, filename, y))
         videos.append(VideoFileClip(work_dir + '/' + row_dir + '/' + filename).set_position((0, y * yDimension)))
         y = y + 1
     
