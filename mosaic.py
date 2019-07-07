@@ -1,4 +1,6 @@
 from moviepy.editor import *
+import numpy as np # for numerical operations
+from PIL import Image
 import subprocess, os, platform
 
 #Youtuber target url
@@ -13,6 +15,10 @@ output = 'my_stack.mp4'
 #Length of all clips
 start = 0
 stop = 10
+#Video sync related
+audiopeak = 0.015
+frames_per_second = 25
+buffer_duration = 2
 #Number of videos in mosaic
 videoX = 10
 videoY = 10
@@ -24,19 +30,37 @@ videos = []
 x = 0
 y = 0
 
+#Lambda helper to get a cut of the clip as soundarray and calculate the mean volume of it
+cut = lambda i, clip: clip.audio.subclip(i,i+1/frames_per_second).to_soundarray(fps=2000)
+volume = lambda array: np.sqrt(((1.0*array)**2).mean())
+
+def volume_mark(clip):
+    for i in np.arange(0,int(clip.audio.duration), 1/frames_per_second): 
+        current = volume(cut(i, clip))
+        if current >= audiopeak:
+            print("%f -> %f"%(current, i))
+            return i
+
 #Start downloading using youtube-dl
 if not os.path.exists(source_dir + '/' + loaded_flag):
     open(source_dir + '/' + loaded_flag, 'a').close()
     os.system('youtube-dl -o "'+source_dir+'/%(upload_date)s_%(id)s.%(ext)s" -f worst ' + youtube_url)
 else:
-	print('Source files already downloaded')
+    print('Source files already downloaded')
+    
+#Create blank video as buffer before videos
+img = Image.new('RGB', (xDimension, yDimension))
+img.save('black.png')
+blank = ImageClip('black.png', duration=buffer_duration)
 
 #Iterate over files, position and put into holding array
 for file in sorted(os.listdir(source_dir), reverse=True):
     filename = os.fsdecode(file)
     if filename.endswith(".mp4"): 
         print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
-        video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop).set_position((x * xDimension, y * yDimension))
+        video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop)
+        video = concatenate_videoclips([blank, video]).subclip(volume_mark(video), stop + buffer_duration).set_position((x * xDimension, y * yDimension))
+        
         videos.append(video)
         if x < videoX - 1:
             x = x + 1
