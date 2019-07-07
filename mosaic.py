@@ -11,6 +11,7 @@ source_dir = 'source'
 work_dir = 'work'
 loaded_flag = 'loaded'
 output = 'my_stack.mp4'
+black_image = 'black.png'
 
 #Length of all clips
 start = 0
@@ -20,13 +21,14 @@ audiopeak = 0.015
 frames_per_second = 25
 buffer_duration = 2
 #Number of videos in mosaic
-videoX = 10
-videoY = 10
+videoX = 19
+videoY = 19
 #640x360
-xDimension = 320
-yDimension = 180
+xDimension = 160
+yDimension = 90
 # Data holder
 videos = []
+count = 0
 x = 0
 y = 0
 
@@ -48,31 +50,62 @@ if not os.path.exists(source_dir + '/' + loaded_flag):
 else:
     print('Source files already downloaded')
     
+#Prepare workdir
+try:
+    os.mkdir(work_dir)
+except FileExistsError:
+    print('Wokrdir already exists')
+
 #Create blank video as buffer before videos
 img = Image.new('RGB', (xDimension, yDimension))
-img.save('black.png')
-blank = ImageClip('black.png', duration=buffer_duration)
+img.save(work_dir + '/' + black_image)
+blank = ImageClip(work_dir + '/' + black_image, duration=buffer_duration)
 
-#Iterate over files, position and put into holding array
+#Iterate over source files, add black offset and sync timing to first noise in video. Save into workdir
 for file in sorted(os.listdir(source_dir), reverse=True):
     filename = os.fsdecode(file)
-    if filename.endswith(".mp4"): 
-        print("%s/%s (%i,%i)" % (source_dir, filename, x, y))
-        video = VideoFileClip(source_dir + "/" + filename).resize(width=xDimension).subclip(start, stop)
-        video = concatenate_videoclips([blank, video]).subclip(volume_mark(video), stop + buffer_duration).set_position((x * xDimension, y * yDimension))
+    if filename.endswith('.mp4'): 
+        count = count + 1
         
-        videos.append(video)
+        if os.path.exists(work_dir + '/' + filename):
+            print('%s/%s already exists, #%d'% (work_dir, filename, count))
+        else:
+            print('Perpare file: %s/%s, #%d'% (source_dir, filename, count))
+            input_video = VideoFileClip(source_dir + '/' + filename).resize(width=xDimension).subclip(start, stop)
+            concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename)
+            try:
+                input_video.audio.reader.close_proc()
+                input_video.reader.close()
+            except Exception as e:
+                pass
+            
+            try:
+                input_video.close()
+            except Exception as e:
+                print('Failed to close video, %s/%s'% (work_dir, filename))
+        
+        if count > (videoX * videoY):
+            print('Preparation done')
+            break
+        
+        
+#Iterate over workdir files, position clips and put into holding array
+for file in sorted(os.listdir(work_dir), reverse=True):
+    filename = os.fsdecode(file)
+    if filename.endswith('.mp4'):
+        print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
+        work_video = VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, y * yDimension))
+        videos.append(work_video)
+        
         if x < videoX - 1:
             x = x + 1
         else: 
             x = 0
             y = y + 1
             if y >= videoY:
-                print("reached end of area")
+                print("Reached end of area")
                 break
-    else:
-        continue
-
+    
 #final_clip = clips_array([[video0, video1, video2, video3], [video4, video5, video6, video7]])
 #final_clip.resize(width=1920).write_videofile("my_stack.mp4")
 
