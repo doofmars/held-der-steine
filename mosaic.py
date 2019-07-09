@@ -1,4 +1,5 @@
 from moviepy.editor import *
+from moviepy.audio.fx.all import *
 from PIL import Image
 import multiprocessing as mp
 import concurrent.futures
@@ -121,6 +122,7 @@ for file in sorted(os.listdir(work_dir), reverse=True):
         if not os.path.exists(row_output):
             print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
             input_video = VideoFileClip(work_dir + '/' + filename)
+            audio_normalize(input_video)
             videos.append(input_video.subclip(volume_mark(input_video) - buffer_duration, stop).set_position((x * xDimension, 0)))
         
         if x < videoX - 1:
