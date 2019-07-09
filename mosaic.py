@@ -18,9 +18,9 @@ black_image = 'black.png'
 
 #Length of all clips
 start = 0
-stop = 20
+stop = 17
 #Video sync related
-audiopeak = 0.02
+audiopeak = 0.019
 frames_per_second = 25
 buffer_duration = 3
 #Number of videos in mosaic
@@ -49,7 +49,7 @@ def volume_mark(clip):
 
 def prepare_file(filename):
     input_video = VideoFileClip(source_dir + '/' + filename).resize(width=xDimension).subclip(start, stop)
-    concatenate_videoclips([blank, input_video]).subclip(volume_mark(input_video), stop + buffer_duration).write_videofile(work_dir + '/' + filename, verbose=False)
+    concatenate_videoclips([blank, input_video]).write_videofile(work_dir + '/' + filename, verbose=False)
     try:
         input_video.audio.reader.close_proc()
         input_video.reader.close()
@@ -120,7 +120,8 @@ for file in sorted(os.listdir(work_dir), reverse=True):
         row_output = '%s/%s/r_%02d.mp4'% (work_dir, row_dir, y)
         if not os.path.exists(row_output):
             print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
-            videos.append(VideoFileClip(work_dir + '/' + filename).set_position((x * xDimension, 0)))
+            input_video = VideoFileClip(work_dir + '/' + filename)
+            videos.append(input_video.subclip(volume_mark(input_video) - buffer_duration, stop).set_position((x * xDimension, 0)))
         
         if x < videoX - 1:
             x = x + 1
