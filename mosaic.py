@@ -61,8 +61,20 @@ def prepare_file(filename):
         input_video.close()
     except Exception as e:
         print('Failed to close video, %s/%s'% (work_dir, filename))
-        
     return filename
+    
+def close_videos(videos):
+    for video in videos:
+        try:
+            video.audio.reader.close_proc()
+            video.reader.close()
+        except Exception as e:
+            pass
+        
+        try:
+            video.close()
+        except Exception as e:
+            print('Failed to close video, %s/%s'% (work_dir, filename))
 
 #Start downloading using youtube-dl
 if not os.path.exists(source_dir + '/' + loaded_flag):
@@ -122,7 +134,7 @@ for file in sorted(os.listdir(work_dir), reverse=True):
         if not os.path.exists(row_output):
             print('Load file: %s/%s (%i,%i)' % (work_dir, filename, x, y))
             input_video = VideoFileClip(work_dir + '/' + filename)
-            audio_normalize(input_video)
+            input_video = audio_normalize(input_video)
             videos.append(input_video.subclip(volume_mark(input_video) - buffer_duration, stop).set_position((x * xDimension, 0)))
         
         if x < videoX - 1:
@@ -135,6 +147,7 @@ for file in sorted(os.listdir(work_dir), reverse=True):
                 CompositeVideoClip(videos, size=(xDimension*(videoX),yDimension)).write_videofile(row_output)
             x = 0
             y = y + 1
+            close_videos(videos)
             videos = []
             if y >= videoY:
                 print("Reached end of area")
@@ -146,13 +159,14 @@ if len(videos) > 0:
 print('Rows generated')
 
 y = 0
+close_videos(videos)
 videos = []
 
 for file in sorted(os.listdir(work_dir + '/' + row_dir)):
     filename = os.fsdecode(file)
     if filename.endswith('.mp4'):
         print('Load file: %s/%s/%s (%i)' % (work_dir, row_dir, filename, y))
-        videos.append(VideoFileClip(work_dir + '/' + row_dir + '/' + filename).set_position((0, y * yDimension)))
+        videos.append(audio_normalize(VideoFileClip(work_dir + '/' + row_dir + '/' + filename)).set_position((0, y * yDimension)))
         y = y + 1
     
 #final_clip = clips_array([[video0, video1, video2, video3], [video4, video5, video6, video7]])
